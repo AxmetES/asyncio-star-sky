@@ -1,50 +1,41 @@
 import asyncio
 import curses
-
-
-class EventLoopCommand():
-
-    def __await__(self):
-        return (yield self)
-
-
-class Sleep(EventLoopCommand):
-
-    def __init__(self, seconds):
-        self.seconds = seconds
+import time
 
 
 async def blink(canvas, row, column, symbol='*'):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await asyncio.sleep(0)
-        await Sleep(2)
         canvas.refresh()
+        for _ in range(2):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
-        await Sleep(0.3)
         canvas.refresh()
+        for _ in range(1):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await asyncio.sleep(0)
-        await Sleep(0.5)
         canvas.refresh()
+        for _ in range(1):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        await asyncio.sleep(0)
-        await Sleep(0.3)
         canvas.refresh()
+        for _ in range(1):
+            await asyncio.sleep(0)
 
 
 def draw(canvas):
     canvas.border()
-    coroutine = blink(canvas, row=5, column=20, symbol='*')
+    coroutines = [blink(canvas, row=5, column=20 + _, symbol='*') for _ in range(5)]
     while True:
-        coroutine.send(None)
+        for coroutine in coroutines:
+            coroutine.send(None)
+        time.sleep(0.5)
 
 
 if __name__ == '__main__':
     curses.update_lines_cols()
     curses.wrapper(draw)
-    curses.curs_set(False)
+    curses.curs_set(0)
