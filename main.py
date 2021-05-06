@@ -9,22 +9,22 @@ async def blink(canvas, row, column, symbol='*'):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
         canvas.refresh()
-        for _ in range(random.randint(2, 3)):
+        for _ in range(random.randint(1, 10)):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
         canvas.refresh()
-        for _ in range(random.randint(1, 3)):
+        for _ in range(random.randint(1, 2)):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
         canvas.refresh()
-        for _ in range(random.randint(2, 4)):
+        for _ in range(random.randint(1, 10)):
             await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
         canvas.refresh()
-        for _ in range(random.randint(1, 3)):
+        for _ in range(random.randint(1, 5)):
             await asyncio.sleep(0)
 
 
