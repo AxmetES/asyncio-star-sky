@@ -2,7 +2,16 @@ import asyncio
 import curses
 import random
 import time
+from itertools import cycle
 from random import randint
+
+from curses_tools import draw_frame
+
+
+def get_file(filename):
+    with open(filename, 'r') as file:
+        file_context = file.read()
+    return file_context
 
 
 async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0):
@@ -35,6 +44,14 @@ async def fire(canvas, start_row, start_column, rows_speed=-0.3, columns_speed=0
         column += columns_speed
 
 
+async def startship_animation(canvas, x, y, images):
+    for image in cycle(images):
+        draw_frame(canvas, x, y, image, negative=False)
+        await asyncio.sleep(0)
+        canvas.refresh()
+        draw_frame(canvas, x, y, image, negative=True)
+
+
 async def blink(canvas, row, column, symbol='*'):
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
@@ -61,14 +78,16 @@ async def blink(canvas, row, column, symbol='*'):
 def draw(canvas):
     canvas.border()
     symbols = '..+..:::..'
+    img_1 = get_file('rocket_frame_1.txt')
+    img_2 = get_file('rocket_frame_2.txt')
+    images = [img_1, img_2]
     x, y = window.getmaxyx()
     coroutines = [(blink(canvas, row=randint(0, x - 2), column=randint(0, y - 2), symbol=random.choice(symbols))) for _
                   in range(100)]
 
-    x_middle = x // 2
-    y_middle = y // 2
-    time.sleep(20)
-    coroutines.append(fire(canvas, start_row=x_middle, start_column=y_middle))
+    x_middle = (x // 2) - 3
+    y_middle = (y // 2) - 3
+    coroutines.append(startship_animation(canvas, x_middle, y_middle, images))
     while True:
         for coroutine in coroutines.copy():
             try:
