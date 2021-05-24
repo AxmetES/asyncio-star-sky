@@ -13,3 +13,4 @@ python3 main.py
 ```
 
 Buttons ```Right Left Up Down``` used for rocket the control.
+![Alt Text](rocket.gif)
