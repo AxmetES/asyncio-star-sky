@@ -15,22 +15,21 @@ def read_controls(canvas):
 
     while True:
         pressed_key_code = canvas.getch()
-
         if pressed_key_code == -1:
             # https://docs.python.org/3/library/curses.html#curses.window.getch
             break
 
         if pressed_key_code == UP_KEY_CODE:
-            rows_direction = -5
+            rows_direction = -10
 
         if pressed_key_code == DOWN_KEY_CODE:
-            rows_direction = 5
+            rows_direction = 10
 
         if pressed_key_code == RIGHT_KEY_CODE:
-            columns_direction = 5
+            columns_direction = 10
 
         if pressed_key_code == LEFT_KEY_CODE:
-            columns_direction = -5
+            columns_direction = -10
 
         if pressed_key_code == SPACE_KEY_CODE:
             space_pressed = True
@@ -44,6 +43,7 @@ def draw_frame(canvas, start_row, start_column, text, negative=False):
     rows_number, columns_number = canvas.getmaxyx()
 
     for row, line in enumerate(text.splitlines(), round(start_row)):
+
         if row < 0:
             continue
 

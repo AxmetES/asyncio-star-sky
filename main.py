@@ -14,24 +14,32 @@ def get_file(filename):
     return file_context
 
 
-async def starship_animation(canvas, x_middle, y_middle, images):
-    x = x_middle
-    y = y_middle
+async def starship_animation(canvas, start_row, start_column, images):
     for image in cycle(images):
-        frame_size = get_frame_size(image)
-        print(frame_size)
-        print('frame_size-------')
+        frame_row, frame_col = get_frame_size(image)
+        rows_number, columns_number = canvas.getmaxyx()
+
+        row_bottom = rows_number - frame_row
+        col_right = columns_number - frame_col
 
         rows_direction, columns_direction, space_pressed = read_controls(canvas)
-        x = x + rows_direction
-        y = y + columns_direction
+        start_row = start_row + rows_direction
+        start_column = start_column + columns_direction
 
-        draw_frame(canvas, x, y, image, negative=False)
+        if max(start_row, frame_row) == frame_row:
+            start_row = 0
+        if min(start_row, row_bottom) == row_bottom:
+            start_row = row_bottom
+        if max(start_column, frame_col) == frame_col:
+            start_column = 0
+        if min(start_column, col_right) == col_right:
+            start_column = col_right
+
+        draw_frame(canvas, start_row, start_column, image, negative=False)
         canvas.refresh()
         for _ in range(0, 2):
             await asyncio.sleep(0)
-
-            draw_frame(canvas, x, y, image, negative=True)
+            draw_frame(canvas, start_row, start_column, image, negative=True)
 
 
 async def blink(canvas, row, column, symbol='*'):
@@ -66,14 +74,14 @@ def draw(canvas):
     img_1 = get_file('rocket_frame_1.txt')
     img_2 = get_file('rocket_frame_2.txt')
     images = [img_1, img_2]
-    x, y = window.getmaxyx()
-    coroutines = [(blink(canvas, row=randint(0, x - 2), column=randint(0, y - 2), symbol=random.choice(symbols))) for _
+    y, x = window.getmaxyx()
+    coroutines = [(blink(canvas, row=randint(0, y - 2), column=randint(0, x - 2), symbol=random.choice(symbols))) for _
                   in range(100)]
 
-    x_middle = (x // 2) - 3
-    y_middle = (y // 2) - 3
+    row_middle = (y // 2) - 3
+    col_middle = (x // 2) - 3
 
-    coroutines.append(starship_animation(canvas, x_middle, y_middle, images))
+    coroutines.append(starship_animation(canvas, row_middle, col_middle, images))
 
     while True:
         for coroutine in coroutines.copy():
