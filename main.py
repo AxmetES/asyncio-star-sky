@@ -37,9 +37,9 @@ async def starship_animation(canvas, start_row, start_column, images):
 
         draw_frame(canvas, start_row, start_column, image, negative=False)
         canvas.refresh()
-        for _ in range(0, 1):
-            await asyncio.sleep(0)
-            draw_frame(canvas, start_row, start_column, image, negative=True)
+        # for _ in range(0, 1):
+        await asyncio.sleep(0)
+        draw_frame(canvas, start_row, start_column, image, negative=True)
 
 
 async def blink(canvas, row, column, symbol='*'):
