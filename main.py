@@ -8,10 +8,10 @@ from random import randint
 from curses_tools import draw_frame, read_controls, get_frame_size
 
 
-def get_image(filename):
-    with open(filename, 'r') as file:
-        file_context = file.read()
-    return file_context
+def get_image(image_name):
+    with open(image_name, 'r') as file:
+        image_context = file.read()
+    return image_context
 
 
 async def starship_animation(canvas, start_row, start_column, images):
