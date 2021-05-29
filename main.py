@@ -36,6 +36,7 @@ async def starship_animation(canvas, start_row, start_column, images):
             start_column = col_right
 
         draw_frame(canvas, start_row, start_column, image, negative=False)
+        canvas.refresh()
         await asyncio.sleep(0)
         draw_frame(canvas, start_row, start_column, image, negative=True)
 
