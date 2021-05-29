@@ -10,8 +10,8 @@ from curses_tools import draw_frame, read_controls, get_frame_size
 
 def get_image(image_name):
     with open(image_name, 'r') as file:
-        image_context = file.read()
-    return image_context
+        image_content = file.read()
+    return image_content
 
 
 async def starship_animation(canvas, start_row, start_column, images):
