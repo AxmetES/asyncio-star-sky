@@ -3,9 +3,13 @@ import curses
 import random
 import time
 from itertools import cycle
-from random import randint
+from random import randint, choices
+from trash.space_garbage import fly_garbage
+import glob, os
 
 from curses_tools import draw_frame, read_controls, get_frame_size
+
+coroutines = []
 
 
 def get_image(image_name):
@@ -42,25 +46,36 @@ async def starship_animation(canvas, start_row, start_column, images):
 
 
 async def blink(canvas, row, column, symbol='*'):
-    for _ in range(0, random.randint(1, 5)):
+    for _ in range(0, random.randint(1, 10)):
         await asyncio.sleep(0)
 
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        for _ in range(1, 5):
-            await asyncio.sleep(0)
+        await get_sleep(5)
 
         canvas.addstr(row, column, symbol)
-        for _ in range(1, 2):
-            await asyncio.sleep(0)
+        await get_sleep(2)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        for _ in range(1, 5):
-            await asyncio.sleep(0)
+        await get_sleep(5)
 
         canvas.addstr(row, column, symbol)
-        for _ in range(1, 2):
-            await asyncio.sleep(0)
+        await get_sleep(2)
+
+
+async def get_sleep(tics):
+    for _ in range(tics):
+        await asyncio.sleep(0)
+
+
+async def fill_orbit_with_garbage(canvas, x):
+    os.chdir("trash")
+    garbage_images = [get_image(file) for file in glob.glob('*.txt')]
+
+    while True:
+        for frame in cycle(garbage_images):
+            await get_sleep(20)
+            coroutines.append(fly_garbage(canvas=canvas, column=randint(1, x), garbage_frame=frame))
 
 
 def draw(canvas):
@@ -70,15 +85,16 @@ def draw(canvas):
     img_2 = get_image('rocket_frame_2.txt')
     images = [img_1, img_2]
     y, x = window.getmaxyx()
+    global coroutines
     coroutines = [(blink(canvas, row=randint(0, y - 2),
                          column=randint(0, x - 2),
-                         symbol=random.choice(symbols))) for _ in range(100)]
+                         symbol=random.choice(symbols))) for _ in range(150)]
 
     row_middle = (y // 2) - 3
     col_middle = (x // 2) - 3
 
-    coroutines.append(starship_animation(
-        canvas, row_middle, col_middle, images))
+    coroutines.append(starship_animation(canvas, row_middle, col_middle, images))
+    coroutines.append(fill_orbit_with_garbage(canvas, x))
 
     while True:
         for coroutine in coroutines.copy():
