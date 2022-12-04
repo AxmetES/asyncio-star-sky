@@ -20,16 +20,16 @@ def read_controls(canvas):
             break
 
         if pressed_key_code == UP_KEY_CODE:
-            rows_direction = -10
+            rows_direction = -1
 
         if pressed_key_code == DOWN_KEY_CODE:
-            rows_direction = 10
+            rows_direction = 1
 
         if pressed_key_code == RIGHT_KEY_CODE:
-            columns_direction = 10
+            columns_direction = 1
 
         if pressed_key_code == LEFT_KEY_CODE:
-            columns_direction = -10
+            columns_direction = -1
 
         if pressed_key_code == SPACE_KEY_CODE:
             space_pressed = True

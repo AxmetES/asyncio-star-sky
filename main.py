@@ -3,14 +3,15 @@ import curses
 import random
 import time
 from itertools import cycle
-from random import randint, choices
+from random import randint
+
+from physics import update_speed
 from trash.space_garbage import fly_garbage
 import glob, os
-
 from curses_tools import draw_frame, read_controls, get_frame_size
 
 coroutines = []
-
+row_speed, column_speed = 0, 0
 
 def get_image(image_name):
     with open(image_name, 'r') as file:
@@ -19,16 +20,20 @@ def get_image(image_name):
 
 
 async def starship_animation(canvas, start_row, start_column, images):
+    global row_speed, column_speed
     for image in cycle(images):
-        image_row, image_col = get_frame_size(image)
-        rows_number, columns_number = canvas.getmaxyx()
-
-        row_bottom = rows_number - image_row
-        col_right = columns_number - image_col
 
         rows_direct, columns_direct, space_pressed = read_controls(canvas)
-        start_row = start_row + rows_direct
-        start_column = start_column + columns_direct
+
+        row_speed, column_speed = update_speed(row_speed, column_speed, rows_direction=rows_direct,
+                                               columns_direction=columns_direct)
+        start_row = start_row + row_speed
+        start_column = start_column + column_speed
+
+        maxy, maxx = canvas.getmaxyx()
+        image_row, image_col = get_frame_size(image)
+        row_bottom = maxy - image_row
+        col_right = maxx - image_col
 
         if max(start_row, image_row) == image_row:
             start_row = 0
@@ -51,16 +56,20 @@ async def blink(canvas, row, column, symbol='*'):
 
     while True:
         canvas.addstr(row, column, symbol, curses.A_DIM)
-        await get_sleep(5)
+        for _ in range(1, 3):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        await get_sleep(2)
+        for _ in range(1, 2):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol, curses.A_BOLD)
-        await get_sleep(5)
+        for _ in range(1, 2):
+            await asyncio.sleep(0)
 
         canvas.addstr(row, column, symbol)
-        await get_sleep(2)
+        for _ in range(1, 3):
+            await asyncio.sleep(0)
 
 
 async def get_sleep(tics):
@@ -80,22 +89,21 @@ async def fill_orbit_with_garbage(canvas, x):
 
 def draw(canvas):
     canvas.border()
-    symbols = '..+..:::..'
+    symbols = '+:**...'
     img_1 = get_image('rocket_frame_1.txt')
     img_2 = get_image('rocket_frame_2.txt')
     images = [img_1, img_2]
-    y, x = window.getmaxyx()
+    maxy, maxx = window.getmaxyx()
     global coroutines
-    coroutines = [(blink(canvas, row=randint(0, y - 2),
-                         column=randint(0, x - 2),
-                         symbol=random.choice(symbols))) for _ in range(150)]
 
-    row_middle = (y // 2) - 3
-    col_middle = (x // 2) - 3
-
+    coroutines = [(blink(canvas,
+                         row=randint(0, maxy - 2),
+                         column=randint(0, maxx - 2),
+                         symbol=random.choice(symbols))) for _ in range(100)]
+    row_middle = (maxy / 2)
+    col_middle = (maxx / 2)
     coroutines.append(starship_animation(canvas, row_middle, col_middle, images))
-    coroutines.append(fill_orbit_with_garbage(canvas, x))
-
+    coroutines.append(fill_orbit_with_garbage(canvas, maxx))
     while True:
         for coroutine in coroutines.copy():
             try:
