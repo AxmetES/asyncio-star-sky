@@ -11,35 +11,34 @@ import glob, os
 from curses_tools import draw_frame, read_controls, get_frame_size
 
 coroutines = []
-row_speed, column_speed = 0, 0
+row_speed, column_speed = 2, 2
 
-def get_image(image_name):
-    with open(image_name, 'r') as file:
+
+def get_image(file_name):
+    with open(file_name, 'r') as file:
         image_content = file.read()
     return image_content
 
 
 async def starship_animation(canvas, start_row, start_column, images):
     global row_speed, column_speed
+    image_row, image_col = get_frame_size(images[0])
+    maxy, maxx = canvas.getmaxyx()
+    row_bottom = maxy - image_row
+    col_right = maxx - image_col
+
     for image in cycle(images):
-
         rows_direct, columns_direct, space_pressed = read_controls(canvas)
-
         row_speed, column_speed = update_speed(row_speed, column_speed, rows_direction=rows_direct,
                                                columns_direction=columns_direct)
         start_row = start_row + row_speed
         start_column = start_column + column_speed
 
-        maxy, maxx = canvas.getmaxyx()
-        image_row, image_col = get_frame_size(image)
-        row_bottom = maxy - image_row
-        col_right = maxx - image_col
-
-        if max(start_row, image_row) == image_row:
+        if max(start_row, 0) == 0:
             start_row = 0
         if min(start_row, row_bottom) == row_bottom:
             start_row = row_bottom
-        if max(start_column, image_col) == image_col:
+        if max(start_column, 0) == 0:
             start_column = 0
         if min(start_column, col_right) == col_right:
             start_column = col_right
@@ -84,12 +83,14 @@ async def fill_orbit_with_garbage(canvas, x):
     while True:
         for frame in cycle(garbage_images):
             await get_sleep(20)
-            coroutines.append(fly_garbage(canvas=canvas, column=randint(1, x), garbage_frame=frame))
+            coroutines.append(fly_garbage(canvas=canvas,
+                                          column=randint(1, x),
+                                          garbage_frame=frame))
 
 
 def draw(canvas):
     canvas.border()
-    symbols = '+:**...'
+    symbols = '*.:'
     img_1 = get_image('rocket_frame_1.txt')
     img_2 = get_image('rocket_frame_2.txt')
     images = [img_1, img_2]
