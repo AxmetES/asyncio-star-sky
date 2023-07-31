@@ -8,6 +8,7 @@ from itertools import cycle
 from random import randint
 
 from fire_animation import fire
+from obstacles import show_obstacles, Obstacle, show_obstacle
 from physics import update_speed
 from trash.space_garbage import fly_garbage
 from curses_tools import draw_frame, read_controls, get_frame_size
@@ -15,8 +16,9 @@ import utils
 from sleep import Sleep
 
 
+obstacles = []
 coroutines = []
-row_speed, column_speed = 2, 2
+row_speed, column_speed = 0, 0
 
 
 async def starship_animation(canvas, start_row, start_column, images):
@@ -78,14 +80,15 @@ async def get_sleep(tics=1):
 
 async def fill_orbit_with_garbage(canvas, x):
     os.chdir("trash")
-    garbage_images = [utils.get_image(file) for file in glob.glob('*.txt')]
 
     while True:
-        for frame in cycle(garbage_images):
+        for file in cycle(glob.glob('*.txt')):
+            frame = utils.get_image(file)
             await get_sleep(tics=20)
             coroutines.append(fly_garbage(canvas=canvas,
                                           column=randint(1, x),
-                                          garbage_frame=frame))
+                                          garbage_frame=frame,
+                                          file=file))
 
 
 def draw(canvas):
@@ -111,7 +114,7 @@ def draw(canvas):
                 coroutine.send(None)
             except StopIteration:
                 coroutines.remove(coroutine)
-        time.sleep(0.2)
+        time.sleep(0.1)
 
 
 if __name__ == '__main__':
