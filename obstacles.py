@@ -104,6 +104,12 @@ def has_collision(obstacle_corner, obstacle_size, obj_corner, obj_size=(1, 1)):
     ])
 
 
+# async def check_obstacle(canvas, obstacles):
+#     rows_number, columns_number = canvas.getmaxyx()
+#     for obstacle in obstacles:
+        
+
+
 def get_obstacles():
     obstacles = []
     os.chdir("trash")

@@ -10,7 +10,7 @@ from random import randint
 from fire_animation import fire
 from obstacles import show_obstacles, Obstacle, show_obstacle
 from physics import update_speed
-from trash.space_garbage import fly_garbage
+from trash.space_garbage import fly_garbage, check_in_obstacles
 from curses_tools import draw_frame, read_controls, get_frame_size
 import utils
 from sleep import Sleep
@@ -18,26 +18,22 @@ from sleep import Sleep
 
 obstacles = []
 coroutines = []
-row_speed, column_speed = 0, 0
 
 
 async def starship_animation(canvas, start_row, start_column, images):
-    global row_speed, column_speed
+    row_speed, column_speed = 0, 0
     image_row, image_col = get_frame_size(images[0])
-    maxy, maxx = canvas.getmaxyx()
-    row_bottom = maxy - image_row
-    col_right = maxx - image_col
-
+    max_row, max_col = canvas.getmaxyx()
+    row_bottom = max_row - image_row
+    col_right = max_col - image_col
     for image in cycle(images):
         rows_direct, columns_direct, space_pressed = read_controls(canvas)
-        if space_pressed:
-            coroutines.append(fire(canvas, start_row, start_column=start_column+2))
-        row_speed, column_speed = update_speed(row_speed,
-                                               column_speed,
-                                               rows_direction=rows_direct,
-                                               columns_direction=columns_direct)
+
         start_row = start_row + row_speed
         start_column = start_column + column_speed
+
+        if space_pressed:
+            coroutines.append(fire(canvas, obstacles, start_row, start_column=start_column+2))
 
         if max(start_row, 0) == 0:
             start_row = 0
@@ -48,9 +44,13 @@ async def starship_animation(canvas, start_row, start_column, images):
         if min(start_column, col_right) == col_right:
             start_column = col_right
 
+        row_speed, column_speed = update_speed(row_speed,
+                                               column_speed,
+                                               rows_direction=rows_direct,
+                                               columns_direction=columns_direct)
+
         draw_frame(canvas, start_row, start_column, image, negative=False)
         canvas.refresh()
-        # await asyncio.sleep(0)
         await Sleep(1)
         draw_frame(canvas, start_row, start_column, image, negative=True)
 
@@ -80,15 +80,16 @@ async def get_sleep(tics=1):
 
 async def fill_orbit_with_garbage(canvas, x):
     os.chdir("trash")
-
     while True:
         for file in cycle(glob.glob('*.txt')):
             frame = utils.get_image(file)
             await get_sleep(tics=20)
             coroutines.append(fly_garbage(canvas=canvas,
+                                          obstacles=obstacles,
                                           column=randint(1, x),
                                           garbage_frame=frame,
                                           file=file))
+            coroutines.append(check_in_obstacles(canvas, obstacles))
 
 
 def draw(canvas):
