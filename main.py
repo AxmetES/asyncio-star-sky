@@ -166,7 +166,7 @@ def get_garbage_delay_tics(year):
     elif year < 2020:
         return 6, 0.9
     else:
-        return 2, 2
+        return 4, 2
 
 
 async def fill_orbit_with_garbage(canvas, x):
