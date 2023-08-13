@@ -8,16 +8,81 @@ from itertools import cycle
 from random import randint
 
 from fire_animation import fire
-from obstacles import show_obstacles, Obstacle, show_obstacle
 from physics import update_speed
-from trash.space_garbage import fly_garbage, check_in_obstacles
+from trash.space_garbage import fly_garbage, remove_from_obstacles
 from curses_tools import draw_frame, read_controls, get_frame_size
 import utils
 from sleep import Sleep
 
 
+year = 1956
 obstacles = []
 coroutines = []
+obstacles_in_last_collisions = []
+PHRASES = {
+    1957: "First Sputnik",
+    1961: "Gagarin flew!",
+    1969: "Armstrong got on the moon!",
+    1971: "First orbital space station Salute-1",
+    1981: "Flight of the Shuttle Columbia",
+    1998: 'ISS start building',
+    2011: 'Messenger launch to Mercury',
+    2020: "Take the plasma gun! Shoot the garbage!",
+}
+
+
+async def count_years(canvas):
+    global year
+    while True:
+        subwin = canvas.derwin(3, 10, 0, 0)
+        subwin.border()
+        draw_frame(subwin, 1, 3, str(year))
+        await get_sleep(15)
+        draw_frame(subwin, 1, 3, str(year), negative=True)
+        year += 1
+        if year in [1957, 1961, 1969, 1971, 1981, 1998, 2011, 2020]:
+            await write_center(canvas, PHRASES[year])
+
+
+async def write_center(canvas, text):
+    maxy, maxx = window.getmaxyx()
+    row_third = (maxy / 4)
+    col_middle = (maxx / 2)
+    image_row, image_col = get_frame_size(text)
+    start_row = row_third - (image_row / 2)
+    start_col = col_middle - (image_col / 2)
+    for tics in range(3):
+        draw_frame(canvas, start_row, start_col, text)
+        await get_sleep(10)
+        draw_frame(canvas, start_row, start_col, text, negative=True)
+    return
+
+
+async def show_gameover(canvas, obstacles, collision_row, collision_column):
+    maxy, maxx = window.getmaxyx()
+    row_middle = (maxy / 2)
+    col_middle = (maxx / 2)
+
+    text = """   _____                         ____                 
+  / ____|                       / __ \                
+ | |  __  __ _ _ __ ___   ___  | |  | |_   _____ _ __ 
+ | | |_ |/ _` | '_ ` _ \ / _ \ | |  | \ \ / / _ \ '__|
+ | |__| | (_| | | | | | |  __/ | |__| |\ V /  __/ |   
+  \_____|\__,_|_| |_| |_|\___|  \____/  \_/ \___|_|   
+                                                      
+                                                      """
+
+    image_row, image_col = get_frame_size(text)
+    start_row = row_middle - (image_row / 2)
+    start_col = col_middle - (image_col / 2)
+
+    for obstacle in obstacles:
+        if obstacle.has_collision(collision_row, collision_column):
+            while True:
+                draw_frame(canvas, start_row, start_col, text, negative=False)
+                canvas.refresh()
+                await asyncio.sleep(0)
+                draw_frame(canvas, start_row, start_col, text, negative=True)
 
 
 async def starship_animation(canvas, start_row, start_column, images):
@@ -26,14 +91,21 @@ async def starship_animation(canvas, start_row, start_column, images):
     max_row, max_col = canvas.getmaxyx()
     row_bottom = max_row - image_row
     col_right = max_col - image_col
+    start_row = start_row - (image_row / 2)
+    start_column = start_column - (image_col / 2)
+
     for image in cycle(images):
         rows_direct, columns_direct, space_pressed = read_controls(canvas)
 
         start_row = start_row + row_speed
         start_column = start_column + column_speed
 
-        if space_pressed:
-            coroutines.append(fire(canvas, obstacles, start_row, start_column=start_column+2))
+        if space_pressed and year > 2020:
+            coroutines.append(fire(canvas,
+                                   obstacles,
+                                   obstacles_in_last_collisions,
+                                   start_row,
+                                   start_column=start_column+2))
 
         if max(start_row, 0) == 0:
             start_row = 0
@@ -48,6 +120,8 @@ async def starship_animation(canvas, start_row, start_column, images):
                                                column_speed,
                                                rows_direction=rows_direct,
                                                columns_direction=columns_direct)
+
+        await show_gameover(canvas, obstacles, start_row, start_column)
 
         draw_frame(canvas, start_row, start_column, image, negative=False)
         canvas.refresh()
@@ -78,18 +152,38 @@ async def get_sleep(tics=1):
         await Sleep(1)
 
 
+def get_garbage_delay_tics(year):
+    if year < 1957:
+        return 40, 0.2
+    elif year < 1969:
+        return 20, 0.3
+    elif year < 1981:
+        return 14, 0.4
+    elif year < 1995:
+        return 10, 0.6
+    elif year < 2010:
+        return 8, 0.8
+    elif year < 2020:
+        return 6, 0.9
+    else:
+        return 2, 2
+
+
 async def fill_orbit_with_garbage(canvas, x):
     os.chdir("trash")
     while True:
+        coroutines.append(remove_from_obstacles(canvas, obstacles, obstacles_in_last_collisions))
         for file in cycle(glob.glob('*.txt')):
+            garbage_tics, garbage_speed = get_garbage_delay_tics(year)
             frame = utils.get_image(file)
-            await get_sleep(tics=20)
+            await get_sleep(tics=garbage_tics)
             coroutines.append(fly_garbage(canvas=canvas,
                                           obstacles=obstacles,
+                                          obstacles_in_last_collisions=obstacles_in_last_collisions,
                                           column=randint(1, x),
                                           garbage_frame=frame,
-                                          file=file))
-            coroutines.append(check_in_obstacles(canvas, obstacles))
+                                          file=file,
+                                          speed=garbage_speed))
 
 
 def draw(canvas):
@@ -107,8 +201,9 @@ def draw(canvas):
                          symbol=random.choice(symbols))) for _ in range(300)]
     row_middle = (maxy / 2)
     col_middle = (maxx / 2)
-    coroutines.append(starship_animation(canvas, row_middle, col_middle, images))
+    coroutines.append(count_years(canvas))
     coroutines.append(fill_orbit_with_garbage(canvas, maxx))
+    coroutines.append(starship_animation(canvas, row_middle, col_middle, images))
     while True:
         for coroutine in coroutines.copy():
             try:

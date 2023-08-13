@@ -48,16 +48,12 @@ def _get_bounding_box_lines(rows, columns):
 
 async def show_obstacles(canvas, obstacles):
     """Display bounding boxes of every obstacle in a list"""
-
     while True:
         boxes = []
-
         for obstacle in obstacles:
             boxes.append(obstacle.dump_bounding_box())
-
         for row, column, frame in boxes:
             draw_frame(canvas, row, column, frame)
-
         await asyncio.sleep(0)
 
         for row, column, frame in boxes:
@@ -102,12 +98,6 @@ def has_collision(obstacle_corner, obstacle_size, obj_corner, obj_size=(1, 1)):
         _is_point_inside(*obj_corner, *obj_size, *obstacle_corner),
         _is_point_inside(*obj_corner, *obj_size, *opposite_obstacle_corner),
     ])
-
-
-# async def check_obstacle(canvas, obstacles):
-#     rows_number, columns_number = canvas.getmaxyx()
-#     for obstacle in obstacles:
-        
 
 
 def get_obstacles():
