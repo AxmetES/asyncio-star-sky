@@ -80,12 +80,11 @@ async def show_gameover(canvas, obstacles, collision_row, collision_column):
         if obstacle.has_collision(collision_row, collision_column):
             while True:
                 draw_frame(canvas, start_row, start_col, text, negative=False)
-                canvas.refresh()
                 await asyncio.sleep(0)
                 draw_frame(canvas, start_row, start_col, text, negative=True)
 
 
-async def starship_animation(canvas, start_row, start_column, images):
+async def animate_starship(canvas, start_row, start_column, images):
     row_speed, column_speed = 0, 0
     image_row, image_col = get_frame_size(images[0])
     max_row, max_col = canvas.getmaxyx()
@@ -107,15 +106,10 @@ async def starship_animation(canvas, start_row, start_column, images):
                                    start_row,
                                    start_column=start_column+2))
 
-        if max(start_row, 0) == 0:
-            start_row = 0
-        if min(start_row, row_bottom) == row_bottom:
-            start_row = row_bottom
-        if max(start_column, 0) == 0:
-            start_column = 0
-        if min(start_column, col_right) == col_right:
-            start_column = col_right
-
+        start_row = max(start_row, 0)
+        start_row = min(start_row, row_bottom)
+        start_column = max(start_column, 0)
+        start_column = min(start_column, col_right)
         row_speed, column_speed = update_speed(row_speed,
                                                column_speed,
                                                rows_direction=rows_direct,
@@ -124,13 +118,12 @@ async def starship_animation(canvas, start_row, start_column, images):
         await show_gameover(canvas, obstacles, start_row, start_column)
 
         draw_frame(canvas, start_row, start_column, image, negative=False)
-        canvas.refresh()
         await Sleep(1)
         draw_frame(canvas, start_row, start_column, image, negative=True)
 
 
-async def blink(canvas, row, column, symbol='*'):
-    for _ in range(0, random.randint(1, 10)):
+async def blink(canvas, row, column, offset_tics, symbol='*'):
+    for _ in range(0, offset_tics):
         await Sleep(1)
 
     while True:
@@ -191,23 +184,25 @@ def draw(canvas):
     symbols = '*.*.:.:+.'
     img_1 = utils.get_image('rocket_frame_1.txt')
     img_2 = utils.get_image('rocket_frame_2.txt')
-    images = [img_1, img_2]
+    images = [img_1, img_1, img_2, img_2]
     maxy, maxx = window.getmaxyx()
     global coroutines
 
     coroutines = [(blink(canvas,
                          row=randint(0, maxy - 2),
                          column=randint(0, maxx - 2),
+                         offset_tics=random.randint(1,10),
                          symbol=random.choice(symbols))) for _ in range(300)]
     row_middle = (maxy / 2)
     col_middle = (maxx / 2)
     coroutines.append(count_years(canvas))
     coroutines.append(fill_orbit_with_garbage(canvas, maxx))
-    coroutines.append(starship_animation(canvas, row_middle, col_middle, images))
+    coroutines.append(animate_starship(canvas, row_middle, col_middle, images))
     while True:
         for coroutine in coroutines.copy():
             try:
                 coroutine.send(None)
+                canvas.refresh()
             except StopIteration:
                 coroutines.remove(coroutine)
         time.sleep(0.1)
