@@ -203,8 +203,8 @@ def draw(canvas):
             try:
                 coroutine.send(None)
             except StopIteration:
-                canvas.refresh()
                 coroutines.remove(coroutine)
+            canvas.refresh()
         time.sleep(0.1)
 
 
