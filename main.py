@@ -199,12 +199,12 @@ def draw(canvas):
     coroutines.append(fill_orbit_with_garbage(canvas, maxx))
     coroutines.append(animate_starship(canvas, row_middle, col_middle, images))
     while True:
-        try:
-            for coroutine in coroutines.copy():
+        for coroutine in coroutines.copy():
+            try:
                 coroutine.send(None)
+            except StopIteration:
                 canvas.refresh()
-        except StopIteration:
-            coroutines.remove(coroutine)
+                coroutines.remove(coroutine)
         time.sleep(0.1)
 
 
